@@ -20,19 +20,19 @@
  *
  *
  ******************************************************************************/
-#include <log/log.h>
 #include <stdio.h>
-#include <sys/stat.h>
 #include <list>
 #include <string>
 #include <vector>
+#include <log/log.h>
 #include "android_logmsg.h"
+#include <sys/stat.h>
 const char alternative_config_path[] = "";
 const char* transport_config_paths[] = {"/odm/etc/", "/vendor/etc/", "/etc/"};
 
 const int transport_config_path_size =
     (sizeof(transport_config_paths) / sizeof(transport_config_paths[0]));
-#define config_name "libnfc-hal-st.conf"
+#define config_name "libnfc-st.conf"
 #define extra_config_base "libnfc-st-"
 #define extra_config_ext ".conf"
 #define IsStringValue 0x80000000
@@ -63,7 +63,6 @@ class CNfcConfig : public vector<const CNfcParam*> {
   bool getValue(const char* name, char* pValue, size_t& len) const;
   bool getValue(const char* name, unsigned long& rValue) const;
   bool getValue(const char* name, unsigned short& rValue) const;
-  bool getValue(const char* name, char* pValue, long len, long* readlen) const;
   const CNfcParam* find(const char* p_name) const;
   void clean();
 
@@ -143,7 +142,8 @@ inline int getDigitValue(char c, int base) {
 ** Returns:     none
 **
 *******************************************************************************/
-void findConfigFile(const string& configName, string& filePath) {
+void findConfigFile(const string& configName,
+                                                string& filePath) {
   for (int i = 0; i < transport_config_path_size - 1; i++) {
     filePath.assign(transport_config_paths[i]);
     filePath += configName;
@@ -185,19 +185,19 @@ bool CNfcConfig::readConfig(const char* name, bool bResetContent) {
   int i = 0;
   int base = 0;
   char c = 0;
-  int bflag = 0;
+
   state = BEGIN_LINE;
   /* open config file, read it into a buffer */
   if ((fd = fopen(name, "rb")) == NULL) {
-    STLOG_HAL_W("%s Cannot open config file %s\n", __func__, name);
+      STLOG_HAL_W("%s Cannot open config file %s\n", __func__, name);
     if (bResetContent) {
-      STLOG_HAL_W("%s Using default value for all settings\n", __func__);
+        STLOG_HAL_W("%s Using default value for all settings\n", __func__);
       mValidFile = false;
     }
     return false;
   }
   STLOG_HAL_D("%s Opened %s config %s\n", __func__,
-              (bResetContent ? "base" : "optional"), name);
+        (bResetContent ? "base" : "optional"), name);
 
   mValidFile = true;
   if (size() > 0) {
@@ -242,7 +242,6 @@ bool CNfcConfig::readConfig(const char* name, bool bResetContent) {
           i = 0;
         } else if (c == '{') {
           state = NUM_VALUE;
-          bflag = 1;
           base = 16;
           i = 0;
           Set(IsStringValue);
@@ -260,27 +259,21 @@ bool CNfcConfig::readConfig(const char* name, bool bResetContent) {
           state = NUM_VALUE;
           base = 10;
           numValue = getDigitValue(c, base);
-          i = 0;
+          i=0;
           break;
         } else if (c != '\n' && c != '\r') {
           state = END_LINE;
           break;
         }
-        // fal through to numValue to handle numValue
+      // fal through to numValue to handle numValue
 
       case NUM_VALUE:
         if (isDigit(c, base)) {
           numValue *= base;
           numValue += getDigitValue(c, base);
           ++i;
-        } else if (bflag == 1 &&
-                   (c == ' ' || c == '\r' || c == '\n' || c == '\t')) {
-          break;
         } else if (base == 16 &&
                    (c == ':' || c == '-' || c == ' ' || c == '}')) {
-          if (c == '}') {
-            bflag = 0;
-          }
           if (i > 0) {
             int n = (i + 1) / 2;
             while (n-- > 0) {
@@ -292,15 +285,10 @@ bool CNfcConfig::readConfig(const char* name, bool bResetContent) {
           numValue = 0;
           i = 0;
         } else {
-          if (c == '\n' || c == '\r') {
-            if (bflag == 0) {
-              state = BEGIN_LINE;
-            }
-          } else {
-            if (bflag == 0) {
-              state = END_LINE;
-            }
-          }
+          if (c == '\n' || c == '\r')
+            state = BEGIN_LINE;
+          else
+            state = END_LINE;
           if (Is(IsStringValue) && base == 16 && i > 0) {
             int n = (i + 1) / 2;
             while (n-- > 0) strValue.push_back(((numValue >> (n * 8)) & 0xFF));
@@ -400,7 +388,7 @@ CNfcConfig& CNfcConfig::GetInstance() {
 *******************************************************************************/
 bool CNfcConfig::getValue(const char* name, char* pValue, size_t& len) const {
   const CNfcParam* pParam = find(name);
-  if (pParam == NULL || pValue == NULL) return false;
+  if (pParam == NULL || pValue== NULL) return false;
 
   if (pParam->str_len() > 0) {
     memset(pValue, 0, len);
@@ -410,32 +398,7 @@ bool CNfcConfig::getValue(const char* name, char* pValue, size_t& len) const {
   }
   return false;
 }
-/*******************************************************************************
-**
-** Function:    CNfcConfig::getValue()
-**
-** Description: get a string value of a setting and the length of it.
-**
-** Returns:     true if setting exists
-**              false if setting does not exist
-**
-*******************************************************************************/
-bool CNfcConfig::getValue(const char* name, char* pValue, long len,
-                          long* readlen) const {
-  const CNfcParam* pParam = find(name);
-  if (pParam == NULL) return false;
-  if (pParam->str_len() > 0) {
-    if (pParam->str_len() <= (unsigned long)len) {
-      memset(pValue, 0, len);
-      memcpy(pValue, pParam->str_value(), pParam->str_len());
-      *readlen = pParam->str_len();
-    } else {
-      *readlen = -1;
-    }
-    return true;
-  }
-  return false;
-}
+
 /*******************************************************************************
 **
 ** Function:    CNfcConfig::getValue()
@@ -497,8 +460,7 @@ const CNfcParam* CNfcConfig::find(const char* p_name) const {
       if ((*it)->str_len() > 0) {
         STLOG_HAL_D("%s found %s=%s\n", __func__, p_name, (*it)->str_value());
       } else {
-        STLOG_HAL_D("%s found %s=(0x%lX)\n", __func__, p_name,
-                    (*it)->numValue());
+        STLOG_HAL_D("%s found %s=(0x%lX)\n", __func__, p_name, (*it)->numValue());
       }
       return *it;
     } else
@@ -537,8 +499,8 @@ void CNfcConfig::add(const CNfcParam* pParam) {
     m_list.push_back(pParam);
     return;
   }
-  for (list<const CNfcParam*>::iterator it = m_list.begin(),
-                                        itEnd = m_list.end();
+  for (list<const CNfcParam *>::iterator it = m_list.begin(),
+                                         itEnd = m_list.end();
        it != itEnd; ++it) {
     if (**it < pParam->c_str()) continue;
     m_list.insert(it, pParam);
@@ -559,8 +521,8 @@ void CNfcConfig::add(const CNfcParam* pParam) {
 void CNfcConfig::moveFromList() {
   if (m_list.size() == 0) return;
 
-  for (list<const CNfcParam*>::iterator it = m_list.begin(),
-                                        itEnd = m_list.end();
+  for (list<const CNfcParam *>::iterator it = m_list.begin(),
+                                         itEnd = m_list.end();
        it != itEnd; ++it)
     push_back(*it);
   m_list.clear();
@@ -643,29 +605,6 @@ extern "C" int GetStrValue(const char* name, char* pValue, unsigned long l) {
   CNfcConfig& rConfig = CNfcConfig::GetInstance();
 
   return rConfig.getValue(name, pValue, len);
-}
-
-/*******************************************************************************
-**
-** Function:    GetByteArrayValue()
-**
-** Description: Read byte array value from the config file.
-**
-** Parameters:
-**              name - name of the config param to read.
-**              pValue  - pointer to input buffer.
-**              bufflen - input buffer length.
-**              len - out parameter to return the number of bytes read from
-**                    config file, return -1 in case bufflen is not enough.
-**
-** Returns:     TRUE[1] if config param name is found in the config file, else
-**              FALSE[0]
-**
-*******************************************************************************/
-extern "C" int GetByteArrayValue(const char* name, char* pValue, long bufflen,
-                                 long* len) {
-  CNfcConfig& rConfig = CNfcConfig::GetInstance();
-  return rConfig.getValue(name, pValue, bufflen, len);
 }
 
 /*******************************************************************************
