@@ -65,6 +65,4 @@ void StNfc_hal_setLogging(bool enable);
 
 bool StNfc_hal_isLoggingEnabled();
 
-void StNfc_hal_dump(int fd);
-
 #endif /* _STNFC_HAL_API_H_ */
