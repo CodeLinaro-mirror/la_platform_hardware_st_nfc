@@ -124,7 +124,6 @@ bool stpropnci_process_prop_android(bool inform_only, bool dir_from_upper,
           break;
 
         case NCI_QUERY_ANDROID_PASSIVE_OBSERVE:
-
           // Prepare the native message based on
           // stpropnci_state.observe_per_tech
           stpropnci_build_get_observer_cmd(stpropnci_state.tmpbuff,
@@ -164,7 +163,7 @@ bool stpropnci_process_prop_android(bool inform_only, bool dir_from_upper,
           break;
 
         case NCI_ANDROID_SET_PASSIVE_OBSERVER_TECH:
-
+          stpropnci_state.temp_observe_per_tech_bitmap = payload[4];
           // Prepare the native message: RF_SET_LISTEN_OBSERVE_MODE_CMD
           stpropnci_build_rf_set_listen_passive_observer_cmd(
               stpropnci_state.tmpbuff, stpropnci_state.tmpbufflen, payload[4]);
@@ -521,7 +520,8 @@ static void stpropnci_build_get_caps_rsp(uint8_t *buf, uint16_t *buflen) {
 static void stpropnci_build_get_observer_cmd(uint8_t *buf, uint16_t *buflen) {
   uint8_t *pp = buf, *paylen;
 
-  if (stpropnci_state.observe_per_tech) {
+  if (stpropnci_state.observe_per_tech ||
+          stpropnci_state.observe_per_tech_bitmap) {
     NCI_MSG_BLD_HDR0(pp, NCI_MT_CMD, NCI_GID_RF_MANAGE);
     NCI_MSG_BLD_HDR1(pp, NCI_MSG_RF_GET_LISTEN_OBSERVE_MODE_STATE);
     paylen = pp++;
@@ -565,12 +565,20 @@ static bool stpropnci_cb_get_observer_rsp(bool dir_from_upper,
   UINT8_TO_STREAM(pp, NCI_QUERY_ANDROID_PASSIVE_OBSERVE);
   UINT8_TO_STREAM(pp, payload[3]);
   if (payload[3] == NCI_STATUS_OK) {
-    UINT8_TO_STREAM(pp, stpropnci_state.observe_per_tech
-                            ? (((payload[4] == OBSERVE_NONE) ||
-                                (stpropnci_state.observe_mode_suspended))
-                                   ? NCI_ANDROID_PASSIVE_OBSERVE_PARAM_DISABLE
-                                   : payload[4])
-                            : payload[7]);
+    if(stpropnci_state.observe_per_tech ||
+       stpropnci_state.observe_per_tech_bitmap) {
+      // New method, we use the RF_GET_LISTEN_OBSERVE_MODE_STATE response
+      if (stpropnci_state.observe_mode_suspended) {
+        // If the observe mode is suspended, we report the bitmap as 0
+        UINT8_TO_STREAM(pp, NCI_ANDROID_PASSIVE_OBSERVE_PARAM_DISABLE);
+      } else {
+        // Report the bitmap as it was set by the stack
+        UINT8_TO_STREAM(pp, stpropnci_state.observe_per_tech_bitmap);
+      }
+    } else {
+      // Old method, we use the CORE_GET_CONFIG response
+      UINT8_TO_STREAM(pp, payload[7]);
+    }
   }
 
   // Update the pending fields
@@ -958,6 +966,12 @@ static bool stpropnci_cb_rf_set_listen_passive_observer_rsp(
   paylen = pp++;
   UINT8_TO_STREAM(pp, NCI_ANDROID_SET_PASSIVE_OBSERVER_TECH);
   UINT8_TO_STREAM(pp, payload[3]);
+
+  if (payload[3] == NCI_STATUS_OK) {
+    stpropnci_state.observe_per_tech_bitmap =
+        stpropnci_state.temp_observe_per_tech_bitmap;
+  }
+  stpropnci_state.temp_observe_per_tech_bitmap = 0;
 
   // Update the pending fields
   *paylen = pp - (paylen + 1);
