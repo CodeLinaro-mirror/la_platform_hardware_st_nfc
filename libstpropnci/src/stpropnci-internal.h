@@ -169,8 +169,6 @@ extern struct stpropnci_state {
 
   // Flag indicating if we use observe mode per tech or not.
   bool observe_per_tech;
-  uint8_t observe_per_tech_bitmap;
-  uint8_t temp_observe_per_tech_bitmap;
   // Flag indicating observe mode is temporarily suspended.
   bool observe_mode_suspended;
 
