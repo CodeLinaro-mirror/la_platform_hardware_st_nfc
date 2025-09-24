@@ -228,6 +228,9 @@ void hal_wrapper_factoryReset() {
 }
 
 void hal_wrapper_set_observer_mode(uint8_t enable, bool per_tech_cmd) {
+  HalEventLogger::getInstance().log()
+      << __func__ << " enable:" << enable << " per_tech_cmd:" << per_tech_cmd
+      << std::endl;
   mObserverMode = enable;
   mObserverRsp = true;
   mPerTechCmdRsp = per_tech_cmd;
@@ -251,10 +254,11 @@ void halWrapperDataCallback(uint16_t data_len, uint8_t* p_data) {
   int mObserverLength = 0;
   int nciPropEnableFwDbgTraces_size = sizeof(nciPropEnableFwDbgTraces);
 
-  if (mObserverMode && !mObserveModeSuspended && (p_data[0] == 0x6f) && (p_data[1] == 0x02)) {
-    if (mObserveModeSuspendPendingNotifyPollingLoop){
-        mObserveModeSuspended = true;
-        mObserveModeSuspendPendingNotifyPollingLoop = false;
+  if (mObserverMode && !mObserveModeSuspended && (p_data[0] == 0x6f) &&
+      (p_data[1] == 0x02)) {
+    if (mObserveModeSuspendPendingNotifyPollingLoop) {
+      mObserveModeSuspended = true;
+      mObserveModeSuspendPendingNotifyPollingLoop = false;
     }
     // Firmware logs must not be formatted before sending to upper layer.
     if ((mObserverLength = notifyPollingLoopFrames(
