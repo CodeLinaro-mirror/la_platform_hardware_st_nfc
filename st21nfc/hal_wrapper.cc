@@ -237,7 +237,11 @@ void hal_wrapper_set_observer_mode(uint8_t enable, bool per_tech_cmd) {
   mObserveModeSuspended = false;
   mObserveModeSuspendPendingNotifyPollingLoop = false;
 }
-void hal_wrapper_get_observer_mode() { mObserverRsp = true; }
+void hal_wrapper_get_observer_mode() {
+  mObserverRsp = true;
+  HalEventLogger::getInstance().log()
+      << __func__ << " mObserverRsp :" << mObserverRsp << std::endl;
+}
 
 void hal_wrapper_update_complete() {
   STLOG_HAL_V("%s ", __func__);
