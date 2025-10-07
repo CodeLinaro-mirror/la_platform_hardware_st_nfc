@@ -22,6 +22,7 @@
 #include <hardware/nfc.h>
 #include <log/log.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 
 #include "android_logmsg.h"
@@ -29,6 +30,7 @@
 #include "hal_fd.h"
 #include "hal_fwlog.h"
 #include "halcore.h"
+#include "i2clayer.h"
 #include "st21nfc_dev.h"
 #define OPEN_TIMEOUT_MAX_COUNT 5
 
@@ -112,6 +114,7 @@ bool hal_wrapper_open(st21nfc_dev_t* dev, nfc_stack_callback_t* p_cback,
 
   STLOG_HAL_D("%s", __func__);
 
+  set_ready(0);
   mFwUpdateResMask = hal_fd_init();
   mRetryFwDwl = 5;
   mFwUpdateTaskMask = 0;
@@ -145,6 +148,7 @@ bool hal_wrapper_open(st21nfc_dev_t* dev, nfc_stack_callback_t* p_cback,
   HalEventLogger::getInstance().log() << __func__ << std::endl;
 
   HalSendDownstreamTimer(mHalHandle, 10000);
+  wait_ready();
 
   return 1;
 }
@@ -243,7 +247,7 @@ void halWrapperDataCallback(uint16_t data_len, uint8_t* p_data) {
   int mObserverLength = 0;
   int nciPropEnableFwDbgTraces_size = sizeof(nciPropEnableFwDbgTraces);
 
-  if (mObserverMode && (p_data[0] == 0x6f) && (p_data[1] == 0x02)) {
+  if (mObserverMode && !mObserveModeSuspended && (p_data[0] == 0x6f) && (p_data[1] == 0x02)) {
     // Firmware logs must not be formatted before sending to upper layer.
     if ((mObserverLength = notifyPollingLoopFrames(
              p_data, data_len, nciAndroidPassiveObserver)) > 0) {
@@ -351,6 +355,7 @@ void halWrapperDataCallback(uint16_t data_len, uint8_t* p_data) {
       } else {
         mHalWrapperDataCallback(data_len, p_data);
       }
+      set_ready(1);
       break;
     case HAL_WRAPPER_STATE_OPEN_CPLT:  // 2
       STLOG_HAL_V("%s - mHalWrapperState = HAL_WRAPPER_STATE_OPEN_CPLT",
@@ -733,6 +738,8 @@ void halWrapperDataCallback(uint16_t data_len, uint8_t* p_data) {
                         sizeof(hal_ctrl_clk));
             if (hal_ctrl_clk) {
               STLOG_HAL_E("%s - Clock Error - restart", __func__);
+              STLOG_HAL_E("%s ST21NFC_CLK_STATE:%d", __func__,
+                          ioctl(fidI2c, ST21NFC_CLK_STATE, NULL));
               // Core Generic Error
               p_data[0] = 0x60;
               p_data[1] = 0x00;
@@ -855,6 +862,7 @@ static void halWrapperCallback(uint8_t event,
 
     case HAL_WRAPPER_STATE_OPEN:
       if (event == HAL_WRAPPER_TIMEOUT_EVT) {
+        set_ready(1);
         OpenTimeoutCount++;
         STLOG_HAL_E(
             "NFC-NCI HAL: %s  Timeout accessing the CLF. OpenTimeoutCount:%d",
