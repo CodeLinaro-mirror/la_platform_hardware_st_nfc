@@ -49,7 +49,7 @@ uint8_t NCI_ANDROID_GET_CAPS_RSP[] = {
     0x00, 0x01, 0x01,  // Passive Observe mode
     0x01, 0x01, 0x01,  // Polling frame ntf
     0x03, 0x01, 0x00,  // Autotransact polling loop filter
-    0x04, 0x01, 0x05,  // Nb of max exit frame entries
+    0x04, 0x01, 0x0F,  // Nb of max exit frame entries
     0x05, 0x01, 0x01   // Polling loop annotations
 };
 
