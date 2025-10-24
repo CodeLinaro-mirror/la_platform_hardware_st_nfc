@@ -19,6 +19,7 @@
 #include <android-base/logging.h>
 
 #include "StNfc_hal_api.h"
+#include "hal_event_logger.h"
 
 namespace aidl {
 namespace android {
@@ -44,7 +45,9 @@ void OnDeath(void* cookie) {
   if (mCookie->mOpenCount == mOpenCount) {
     if (Nfc::mCallback != nullptr &&
         !AIBinder_isAlive(Nfc::mCallback->asBinder().get())) {
-      LOG(INFO) << __func__ << " Nfc service has died";
+      LOG(WARNING) << __func__ << " Nfc service has died";
+      HalEventLogger::getInstance().log()
+          << __func__ << " Nfc service has died" << std::endl;
       pthread_mutex_unlock(&mLockOpenClose);
       mCookie->nfc->close(NfcCloseType::DISABLE);
     }
@@ -179,6 +182,11 @@ void OnDeath(void* cookie) {
 
 ::ndk::ScopedAStatus Nfc::isVerboseLoggingEnabled(bool* _aidl_return) {
   *_aidl_return = StNfc_hal_isLoggingEnabled();
+  return ndk::ScopedAStatus::ok();
+}
+
+::ndk::ScopedAStatus Nfc::controlGranted(NfcStatus* _aidl_return) {
+  LOG(INFO) << "controlGranted";
   return ndk::ScopedAStatus::ok();
 }
 
