@@ -642,6 +642,8 @@ void halWrapperDataCallback(uint16_t data_len, uint8_t* p_data) {
         memcpy(p_data + 4, nciAndroidPassiveObserver, data_len - 3);
         data_len = data_len + 1;
         DispHal("RX DATA", (p_data), data_len);
+        HalEventLogger::getInstance().log()
+            << __func__ << " PROP_RF_OBSERVE_MODE_SUSPENDED_NTF" << std::endl;
       } else if ((p_data[0] == 0x6f) && (p_data[1] == 0x1c)) {
         // PROP_RF_OBSERVE_MODE_RESUMED_NTF
         mObserveModeSuspended = false;
@@ -652,6 +654,8 @@ void halWrapperDataCallback(uint16_t data_len, uint8_t* p_data) {
         p_data[3] = 0xC;
         data_len = data_len + 1;
         DispHal("RX DATA", (p_data), data_len);
+        HalEventLogger::getInstance().log()
+            << __func__ << " PROP_RF_OBSERVE_MODE_RESUMED_NTF" << std::endl;
       } else if ((p_data[0] == 0x4f) && (p_data[1] == 0x1d)) {
         // PROP_RF_SET_CUST_PASSIVE_POLL_FRAME_RSP
         memcpy(nciAndroidPassiveObserver, p_data + 3, data_len - 3);
