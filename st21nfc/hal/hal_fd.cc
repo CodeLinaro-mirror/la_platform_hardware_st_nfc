@@ -983,9 +983,17 @@ void ApplyCustomParamHandler(HALHANDLE mHalHandle, uint16_t data_len,
             memset(nciPropSetConfig_CustomField, 0x0,
                    sizeof(nciPropSetConfig_CustomField));
             memcpy(nciPropSetConfig_CustomField, nciSetPropConfig, 9);
-            nciPropSetConfig_CustomField[8] = p_data[6];
-            nciPropSetConfig_CustomField[2] = p_data[6] + 6;
-            memcpy(nciPropSetConfig_CustomField + 9, p_data + 7, p_data[6]);
+            if (data_len < 7) {
+              STLOG_HAL_E("%s - data_len: %d", __func__, data_len);
+            } else {
+              nciPropSetConfig_CustomField[8] = p_data[6];
+              nciPropSetConfig_CustomField[2] = p_data[6] + 6;
+              if (p_data[6] > sizeof(nciPropSetConfig_CustomField)) {
+                STLOG_HAL_E("%s - p_data[6]: %d", __func__, p_data[6]);
+              } else {
+                memcpy(nciPropSetConfig_CustomField + 9, p_data + 7, p_data[6]);
+              }
+            }
             nciPropSetConfig_CustomField[13] = mFWInfo->chipUwbVersion >> 8;
             nciPropSetConfig_CustomField[14] = mFWInfo->chipUwbVersion;
 
