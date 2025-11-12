@@ -397,11 +397,16 @@ int StNfc_hal_write(uint16_t data_len, const uint8_t* p_data) {
       (void)pthread_mutex_unlock(&hal_mtx);
       return 0;
     }
-  } else if (!memcmp(p_data, NCI_ANDROID_PREFIX, sizeof(NCI_ANDROID_PREFIX)) &&
+  } else if (data_len >= 4 &&
+             !memcmp(p_data, NCI_ANDROID_PREFIX, sizeof(NCI_ANDROID_PREFIX)) &&
              p_data[3] == 0x6) {
     DispHal("TX DATA", (p_data), data_len);
 
-    memcpy(nci_cmd + 3, p_data + 4, 4);
+    if (data_len < 8) {
+      STLOG_HAL_E("HAL st21nfc %s  data_len:%d", __func__, data_len);
+    } else {
+      memcpy(nci_cmd + 3, p_data + 4, 4);
+    }
     nci_cmd[0] = 0x2f;
     nci_cmd[1] = 0x19;
 
@@ -471,7 +476,8 @@ int StNfc_hal_write(uint16_t data_len, const uint8_t* p_data) {
       (void)pthread_mutex_unlock(&hal_mtx);
       return 0;
     }
-  } else if (!memcmp(p_data, NCI_ANDROID_PREFIX, sizeof(NCI_ANDROID_PREFIX)) &&
+  } else if (data_len >= 4 &&
+             !memcmp(p_data, NCI_ANDROID_PREFIX, sizeof(NCI_ANDROID_PREFIX)) &&
              p_data[3] == 0x9) {
     DispHal("TX DATA", (p_data), data_len);
     if (data_len < 5) {
@@ -479,7 +485,11 @@ int StNfc_hal_write(uint16_t data_len, const uint8_t* p_data) {
       (void)pthread_mutex_unlock(&hal_mtx);
       return 0;
     }
-    memcpy(nci_cmd + 3, p_data + 4, data_len - 4);
+    if (data_len > 260) {
+      STLOG_HAL_E("HAL st21nfc %s  data_len:%d", __func__, data_len);
+    } else {
+      memcpy(nci_cmd + 3, p_data + 4, data_len - 4);
+    }
     nci_cmd[0] = 0x2f;
     nci_cmd[1] = 0x1d;
     if (p_data[2] == 0x2 && p_data[4] == 0x0) {
