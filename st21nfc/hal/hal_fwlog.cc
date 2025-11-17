@@ -172,6 +172,7 @@ int notifyPollingLoopFrames(uint8_t* p_data, uint16_t data_len,
   uint8_t NCI_ANDROID_PASSIVE_OBSERVER_HEADER[4] = {0x6f, 0xc, 0x01, 0x3};
 
   for (int current_tlv_pos = 6;
+       current_tlv_pos + 1 < data_len &&
        current_tlv_pos + p_data[current_tlv_pos + 1] + 2 <= data_len;
        current_tlv_pos += current_tlv_length) {
     current_tlv_length = p_data[current_tlv_pos + 1] + 2;
