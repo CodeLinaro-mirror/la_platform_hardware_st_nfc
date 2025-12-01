@@ -149,6 +149,7 @@ bool hal_wrapper_open(st21nfc_dev_t* dev, nfc_stack_callback_t* p_cback,
   HalEventLogger::getInstance().initialize();
   HalEventLogger::getInstance().log() << __func__ << std::endl;
   HalEventLogger::getInstance().store_timer_activity("open", 10000);
+  HalEventLogger::getInstance().store_log();
   HalSendDownstreamTimer(mHalHandle, 10000);
   wait_ready();
 
@@ -156,13 +157,14 @@ bool hal_wrapper_open(st21nfc_dev_t* dev, nfc_stack_callback_t* p_cback,
 }
 
 int hal_wrapper_close(int call_cb, int nfc_mode) {
-  STLOG_HAL_V("%s - Sending PROP_NFC_MODE_SET_CMD(%d)", __func__, nfc_mode);
+  STLOG_HAL_D("%s - Sending PROP_NFC_MODE_SET_CMD(%d)", __func__, nfc_mode);
   uint8_t propNfcModeSetCmdQb[] = {0x2f, 0x02, 0x02, 0x02, (uint8_t)nfc_mode};
 
   mHalWrapperState = HAL_WRAPPER_STATE_CLOSING;
   HalEventLogger::getInstance().log() << __func__ << std::endl;
-  // Send PROP_NFC_MODE_SET_CMD
   HalEventLogger::getInstance().store_timer_activity("close", 100);
+  HalEventLogger::getInstance().store_log();
+  // Send PROP_NFC_MODE_SET_CMD
   if (!HalSendDownstreamTimer(mHalHandle, propNfcModeSetCmdQb,
                               sizeof(propNfcModeSetCmdQb), 100)) {
     STLOG_HAL_E("NFC-NCI HAL: %s  HalSendDownstreamTimer failed", __func__);
@@ -876,9 +878,10 @@ static void halWrapperCallback(uint8_t event,
   switch (mHalWrapperState) {
     case HAL_WRAPPER_STATE_CLOSING:
       if (event == HAL_WRAPPER_TIMEOUT_EVT) {
-        STLOG_HAL_D("NFC-NCI HAL: %s  Timeout. Close anyway", __func__);
+        STLOG_HAL_W("NFC-NCI HAL: %s  Timeout. Close anyway", __func__);
         HalSendDownstreamStopTimer(mHalHandle);
         hal_fd_close();
+        hal_wrapper_store_timeout_log();
         mHalWrapperState = HAL_WRAPPER_STATE_CLOSED;
         return;
       }
