@@ -290,6 +290,7 @@ bool I2cOpenLayer(void* dev, HAL_CALLBACK callb, HALHANDLE* pHandle) {
   char nfc_dev_node[64];
   char nfc_reset_req_node[128];
 
+  ALOGD("%s: enter\n", __func__);
   /*Read device node path*/
   if (!GetStrValue(NAME_ST_NFC_DEV_NODE, (char*)nfc_dev_node,
                    sizeof(nfc_dev_node))) {
@@ -346,6 +347,7 @@ bool I2cOpenLayer(void* dev, HAL_CALLBACK callb, HALHANDLE* pHandle) {
 
   (void)pthread_mutex_unlock(&i2ctransport_mtx);
 
+  ALOGD("%s: return\n", __func__);
   return (pthread_create(&threadHandle, NULL, I2cWorkerThread, *pHandle) == 0);
 }
 
@@ -366,16 +368,18 @@ void I2cCloseLayer() {
 
   I2cWriteCmd(&cmd, sizeof(cmd));
   /* wait for terminate */
+  ALOGD("%s: wait for terminate\n", __func__);
   ret = pthread_join(threadHandle, (void**)NULL);
   if (ret != 0) {
     ALOGE("%s: failed to wait for thread (%d)", __func__, ret);
   }
   threadHandle = (pthread_t)NULL;
   (void)pthread_mutex_unlock(&i2ctransport_mtx);
+  ALOGD("%s: exit\n", __func__);
 }
 
 /**
- * Terminates the I2C layer.
+ * Resets the I2C layer.
  */
 void I2cResetPulse() {
   ALOGD("%s: enter\n", __func__);
@@ -384,7 +388,12 @@ void I2cResetPulse() {
 
   i2cResetPulse(fidI2c);
   (void)pthread_mutex_unlock(&i2ctransport_mtx);
+  ALOGD("%s: exit\n", __func__);
 }
+
+/**
+ * Recoveries the I2C layer.
+ */
 void I2cRecovery() {
   ALOGD("%s: enter\n", __func__);
 
@@ -393,6 +402,7 @@ void I2cRecovery() {
   SetToRecoveryMode(fidI2c);
   recovery_mode = false;
   (void)pthread_mutex_unlock(&i2ctransport_mtx);
+  ALOGD("%s: exit\n", __func__);
 }
 /**************************************************************************************************
  *
