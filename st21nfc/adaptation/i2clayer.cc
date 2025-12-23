@@ -208,7 +208,7 @@ static void* I2cWorkerThread(void* arg) {
 
       switch (cmd) {
         case 'X':
-          STLOG_HAL_D("received close command\n");
+          ALOGD("received close command\n");
           closeThread = true;
           break;
 
@@ -264,7 +264,7 @@ static void* I2cWorkerThread(void* arg) {
   }
 
   HalDestroy(hHAL);
-  STLOG_HAL_D("thread exit\n");
+  ALOGD("thread exit\n");
   return 0;
 }
 
