@@ -308,9 +308,11 @@ void halWrapperDataCallback(uint16_t data_len, uint8_t* p_data) {
           STLOG_HAL_V("%s --- CLF mode is LOADER ---", __func__);
 
           if (mRetryFwDwl == 0) {
-            STLOG_HAL_W(
+            STLOG_HAL_E(
                 "%s - Reached maximum nb of retries, FW update failed, exiting",
                 __func__);
+            HalEventLogger::getInstance().log()
+                << __func__ << " Reached maximum nb of retries, FW update failed, exiting " << std::endl;
             mHalWrapperCallback(HAL_NFC_OPEN_CPLT_EVT, HAL_NFC_STATUS_FAILED);
             I2cCloseLayer();
           } else {
