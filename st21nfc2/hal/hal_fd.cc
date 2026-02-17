@@ -513,7 +513,7 @@ void ExitHibernateHandler(HALHANDLE mHalHandle, uint16_t data_len,
           STLOG_HAL_E("%s  SendDownstream failed", __func__);
         }
       } else if (p_data[3] != 0x00) {
-        STLOG_HAL_E("%s - Wrong response. Retry HW reset", __func__);
+        STLOG_HAL_D("%s - Wrong response. Retry HW reset", __func__);
         I2cResetPulse();
         hal_wrapper_set_state(HAL_WRAPPER_STATE_OPEN);
       }
@@ -526,7 +526,7 @@ void ExitHibernateHandler(HALHANDLE mHalHandle, uint16_t data_len,
         I2cResetPulse();
         hal_wrapper_set_state(HAL_WRAPPER_STATE_OPEN);
       } else if (p_data[3] != 0x00) {
-        STLOG_HAL_E("%s - Wrong response. Retry HW reset", __func__);
+        STLOG_HAL_D("%s - Wrong response. Retry HW reset", __func__);
         I2cResetPulse();
         hal_wrapper_set_state(HAL_WRAPPER_STATE_OPEN);
       }
@@ -635,7 +635,7 @@ void UpdateHandler(HALHANDLE mHalHandle, uint16_t data_len, uint8_t* p_data) {
         }
         mHalFDState = HAL_FD_STATE_ERASE_FLASH;
       } else {
-        STLOG_HAL_E("%s - FW flash not succeeded", __func__);
+        STLOG_HAL_D("%s - FW flash not succeeded", __func__);
         SendExitLoadMode(mHalHandle);
       }
       break;
@@ -661,7 +661,7 @@ void UpdateHandler(HALHANDLE mHalHandle, uint16_t data_len, uint8_t* p_data) {
           mHalFDState = HAL_FD_STATE_SEND_RAW_APDU;
 
         } else {
-          STLOG_HAL_E("%s - FW flash not succeeded", __func__);
+          STLOG_HAL_D("%s - FW flash not succeeded", __func__);
           SendExitLoadMode(mHalHandle);
         }
       }
@@ -706,7 +706,7 @@ void UpdateHandler(HALHANDLE mHalHandle, uint16_t data_len, uint8_t* p_data) {
             SendExitLoadMode(mHalHandle);
           }
         } else {
-          STLOG_HAL_E("%s - FW flash not succeeded.", __func__);
+          STLOG_HAL_D("%s - FW flash not succeeded.", __func__);
           I2cResetPulse();
           SendExitLoadMode(mHalHandle);
         }
@@ -716,7 +716,7 @@ void UpdateHandler(HALHANDLE mHalHandle, uint16_t data_len, uint8_t* p_data) {
     case HAL_FD_STATE_EXIT_APDU:  // 2
       STLOG_HAL_D("%s - mHalFDState = HAL_FD_STATE_EXIT_APDU", __func__);
       if ((p_data[data_len - 2] != 0x90) || (p_data[data_len - 1] != 0x00)) {
-        STLOG_HAL_E(
+        STLOG_HAL_D(
             "%s - Error exiting loader mode, i.e. a problem occurred"
             "during FW update",
             __func__);
@@ -728,8 +728,8 @@ void UpdateHandler(HALHANDLE mHalHandle, uint16_t data_len, uint8_t* p_data) {
       break;
 
     default:
-      STLOG_HAL_E("%s - mHalFDState = unknown", __func__);
-      STLOG_HAL_E("%s - FW flash not succeeded", __func__);
+      STLOG_HAL_D("%s - mHalFDState = unknown", __func__);
+      STLOG_HAL_D("%s - FW flash not succeeded", __func__);
       SendExitLoadMode(mHalHandle);
       break;
   }
@@ -775,7 +775,7 @@ static void UpdateHandlerST54L(HALHANDLE mHalHandle, uint16_t data_len,
         }
         mHalFD54LState = HAL_FD_ST54L_STATE_ERASE_NFC_AREA;
       } else {
-        STLOG_HAL_E("%s - FW flash not succeeded", __func__);
+        STLOG_HAL_D("%s - FW flash not succeeded", __func__);
         SendSwitchToUserMode(mHalHandle);
       }
       break;
@@ -791,7 +791,7 @@ static void UpdateHandlerST54L(HALHANDLE mHalHandle, uint16_t data_len,
         }
         mHalFD54LState = HAL_FD_ST54L_STATE_ERASE_UPGRADE_STOP;
       } else {
-        STLOG_HAL_E("%s - FW flash not succeeded", __func__);
+        STLOG_HAL_D("%s - FW flash not succeeded", __func__);
         SendSwitchToUserMode(mHalHandle);
       }
       break;
@@ -807,7 +807,7 @@ static void UpdateHandlerST54L(HALHANDLE mHalHandle, uint16_t data_len,
         }
         mHalFD54LState = HAL_FD_ST54L_STATE_SEND_RAW_APDU;
       } else {
-        STLOG_HAL_E("%s - FW flash not succeeded", __func__);
+        STLOG_HAL_D("%s - FW flash not succeeded", __func__);
         SendSwitchToUserMode(mHalHandle);
       }
       break;
@@ -866,7 +866,7 @@ static void UpdateHandlerST54L(HALHANDLE mHalHandle, uint16_t data_len,
             mHalFD54LState = HAL_FD_ST54L_STATE_SET_CONFIG;
           }
         } else {
-          STLOG_HAL_E("%s - FW flash not succeeded.", __func__);
+          STLOG_HAL_D("%s - FW flash not succeeded.", __func__);
           I2cResetPulse();
           SendSwitchToUserMode(mHalHandle);
         }
@@ -882,9 +882,9 @@ static void UpdateHandlerST54L(HALHANDLE mHalHandle, uint16_t data_len,
 
     case HAL_FD_ST54L_STATE_SWITCH_TO_USER:
       if ((p_data[data_len - 2] != 0x90) || (p_data[data_len - 1] != 0x00)) {
-        STLOG_HAL_E(
+        STLOG_HAL_D(
             "%s - Error exiting loader mode, i.e. a problem occurred during FW "
-            "update\n",
+            "update",
             __func__);
       }
 
@@ -894,8 +894,8 @@ static void UpdateHandlerST54L(HALHANDLE mHalHandle, uint16_t data_len,
       break;
 
     default:
-      STLOG_HAL_E("%s - mHalFD54LState = unknown", __func__);
-      STLOG_HAL_E("%s - FW flash not succeeded", __func__);
+      STLOG_HAL_D("%s - mHalFD54LState = unknown", __func__);
+      STLOG_HAL_D("%s - FW flash not succeeded", __func__);
       SendSwitchToUserMode(mHalHandle);
       break;
   }
@@ -914,24 +914,16 @@ static void UpdateHandlerST54L(HALHANDLE mHalHandle, uint16_t data_len,
 **
 *******************************************************************************/
 void FwUpdateHandler(HALHANDLE mHalHandle, uint16_t data_len, uint8_t* p_data) {
-  ALOGI("%s: Enter\n", __func__);
-  HalEventLogger::getInstance().log()
-      << __func__ << "Enter" << std::endl;
   if (mFWInfo->chipHwVersion == HW_ST54L) {
     UpdateHandlerST54L(mHalHandle, data_len, p_data);
   } else {
     UpdateHandler(mHalHandle, data_len, p_data);
   }
-  HalEventLogger::getInstance().log()
-      << __func__ << "Exit" << std::endl;
-  ALOGI("%s: Exit\n", __func__);
 }
 
 void ApplyCustomParamHandler(HALHANDLE mHalHandle, uint16_t data_len,
                              uint8_t* p_data) {
-  ALOGI("%s - Enter\n", __func__);
-  HalEventLogger::getInstance().log()
-      << __func__ << "Enter" << std::endl;
+  STLOG_HAL_D("%s - Enter ", __func__);
   if (data_len < 3) {
     STLOG_HAL_E("%s : Error, too short data (%d)", __func__, data_len);
     return;
@@ -961,7 +953,7 @@ void ApplyCustomParamHandler(HALHANDLE mHalHandle, uint16_t data_len,
         }
 
       } else {
-        STLOG_HAL_E("%s - Error in custom param application", __func__);
+        STLOG_HAL_D("%s - Error in custom param application", __func__);
         mCustomParamFailed = true;
         I2cResetPulse();
         hal_wrapper_set_state(HAL_WRAPPER_STATE_OPEN);
@@ -991,17 +983,9 @@ void ApplyCustomParamHandler(HALHANDLE mHalHandle, uint16_t data_len,
             memset(nciPropSetConfig_CustomField, 0x0,
                    sizeof(nciPropSetConfig_CustomField));
             memcpy(nciPropSetConfig_CustomField, nciSetPropConfig, 9);
-            if (data_len < 7) {
-              STLOG_HAL_E("%s - data_len: %d", __func__, data_len);
-            } else {
-              nciPropSetConfig_CustomField[8] = p_data[6];
-              nciPropSetConfig_CustomField[2] = p_data[6] + 6;
-              if (p_data[6] > sizeof(nciPropSetConfig_CustomField)) {
-                STLOG_HAL_E("%s - p_data[6]: %d", __func__, p_data[6]);
-              } else {
-                memcpy(nciPropSetConfig_CustomField + 9, p_data + 7, p_data[6]);
-              }
-            }
+            nciPropSetConfig_CustomField[8] = p_data[6];
+            nciPropSetConfig_CustomField[2] = p_data[6] + 6;
+            memcpy(nciPropSetConfig_CustomField + 9, p_data + 7, p_data[6]);
             nciPropSetConfig_CustomField[13] = mFWInfo->chipUwbVersion >> 8;
             nciPropSetConfig_CustomField[14] = mFWInfo->chipUwbVersion;
 
@@ -1026,7 +1010,7 @@ void ApplyCustomParamHandler(HALHANDLE mHalHandle, uint16_t data_len,
       // Check if an error has occurred for PROP_SET_CONFIG_CMD
       // Only log a warning, do not exit code
       if (p_data[3] != 0x00) {
-        STLOG_HAL_E("%s - Error in custom file, continue anyway", __func__);
+        STLOG_HAL_D("%s - Error in custom file, continue anyway", __func__);
       }
 
       break;
@@ -1047,9 +1031,6 @@ void ApplyCustomParamHandler(HALHANDLE mHalHandle, uint16_t data_len,
       }
       break;
   }
-  HalEventLogger::getInstance().log()
-      << __func__ << "Exit" << std::endl;
-  ALOGI("%s: Exit\n", __func__);
 }
 
 void ApplyUwbParamHandler(HALHANDLE mHalHandle, uint16_t data_len,
@@ -1081,7 +1062,7 @@ void ApplyUwbParamHandler(HALHANDLE mHalHandle, uint16_t data_len,
         }
 
       } else {
-        STLOG_HAL_E("%s - Error in uwb param application", __func__);
+        STLOG_HAL_D("%s - Error in uwb param application", __func__);
         I2cResetPulse();
         hal_wrapper_set_state(HAL_WRAPPER_STATE_OPEN);
       }
@@ -1094,7 +1075,7 @@ void ApplyUwbParamHandler(HALHANDLE mHalHandle, uint16_t data_len,
           // Check if an error has occurred for PROP_SET_CONFIG_CMD
           // Only log a warning, do not exit code
           if (p_data[3] != 0x00) {
-            STLOG_HAL_E("%s - Error in uwb file, continue anyway", __func__);
+            STLOG_HAL_D("%s - Error in uwb file, continue anyway", __func__);
           }
           if (!HalSendDownstream(mHalHandle, nciGetPropConfig,
                                  sizeof(nciGetPropConfig))) {
@@ -1104,17 +1085,9 @@ void ApplyUwbParamHandler(HALHANDLE mHalHandle, uint16_t data_len,
           memset(nciPropSetConfig_CustomField, 0x0,
                  sizeof(nciPropSetConfig_CustomField));
           memcpy(nciPropSetConfig_CustomField, nciSetPropConfig, 9);
-          if (data_len < 7) {
-            STLOG_HAL_E("%s - data_len: %d", __func__, data_len);
-          } else {
-            nciPropSetConfig_CustomField[8] = p_data[6];
-            nciPropSetConfig_CustomField[2] = p_data[6] + 6;
-            if (p_data[6] > sizeof(nciPropSetConfig_CustomField)) {
-              STLOG_HAL_E("%s - p_data[6]: %d", __func__, p_data[6]);
-            } else {
-              memcpy(nciPropSetConfig_CustomField + 9, p_data + 7, p_data[6]);
-            }
-          }
+          nciPropSetConfig_CustomField[8] = p_data[6];
+          nciPropSetConfig_CustomField[2] = p_data[6] + 6;
+          memcpy(nciPropSetConfig_CustomField + 9, p_data + 7, p_data[6]);
           nciPropSetConfig_CustomField[13] = mFWInfo->fileUwbVersion >> 8;
           nciPropSetConfig_CustomField[14] = mFWInfo->fileUwbVersion;
 
