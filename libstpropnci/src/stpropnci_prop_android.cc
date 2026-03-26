@@ -885,6 +885,8 @@ static bool stpropnci_cb_generate_polling_loop_frame(bool dir_from_upper,
                 type = TAG_NFC_UNKNOWN;
               } else {
                 // In case of error, do not upstream the polling notification.
+                LOG_E("FW error 0x%02x, skip TLV", error);
+                current_tlv_pos = current_tlv_pos + current_tlv_length;
                 continue;
               }
             } else {
@@ -1480,14 +1482,14 @@ uint16_t iso14443_crc(const uint8_t *data, size_t szLen, int type) {
   } else {
     tempCrc = (unsigned short)CRC_PRESET_B;
   }
-  do {
+  while (szLen--) {
     uint8_t bt;
     bt = *data++;
     bt = (bt ^ (uint8_t)(tempCrc & 0x00FF));
     bt = (bt ^ (bt << 4));
     tempCrc = (tempCrc >> 8) ^ ((uint32_t)bt << 8) ^ ((uint32_t)bt << 3) ^
               ((uint32_t)bt >> 4);
-  } while (--szLen);
+  }
 
   return tempCrc;
 }
