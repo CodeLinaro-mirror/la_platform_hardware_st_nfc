@@ -885,6 +885,8 @@ static bool stpropnci_cb_generate_polling_loop_frame(bool dir_from_upper,
                 type = TAG_NFC_UNKNOWN;
               } else {
                 // In case of error, do not upstream the polling notification.
+                LOG_E("FW error 0x%02x, skip TLV", error);
+                current_tlv_pos = current_tlv_pos + current_tlv_length;
                 continue;
               }
             } else {
@@ -1126,6 +1128,8 @@ static bool stpropnci_build_set_exit_frame_cmd(uint8_t *buf, uint16_t *buflen,
   while (remaining_frames) {
     uint8_t qual;
     uint8_t vallen, motiflen;
+    bool has_crc = false;
+    uint8_t *pVal, *pMask;
 
     if (remaining < 2) {
       LOG_E("NCI_ANDROID_SET_PASSIVE_OBSERVER_EXIT_FRAME too short");
@@ -1156,9 +1160,11 @@ static bool stpropnci_build_set_exit_frame_cmd(uint8_t *buf, uint16_t *buflen,
       switch (qual & 0x7) {
         case 0x00:
           crc = iso14443_crc(in + 1, motiflen, Type_A);
+          has_crc = true;
           break;
         case 0x01:
           crc = iso14443_crc(in + 1, motiflen, Type_B);
+          has_crc = true;
           break;
         default:  // no CRC for other modes at the moment.
           break;
@@ -1167,7 +1173,7 @@ static bool stpropnci_build_set_exit_frame_cmd(uint8_t *buf, uint16_t *buflen,
 
     // sanity check, do we have enough space to store this entry in target
     // message ?
-    if ((MAX_NCI_MESSAGE_LEN - (pp - buf)) < (2 + vallen + (crc ? 4 : 0))) {
+    if ((MAX_NCI_MESSAGE_LEN - (pp - buf)) < (2 + vallen + (has_crc ? 4 : 0))) {
       LOG_E(
           "Failing to generate ST_NCI_MSG_PROP_RF_SET_OBSERVE_MODE_EXIT_FRAME "
           "due to CRC overheads, need to adapt the logic to split message");
@@ -1175,19 +1181,23 @@ static bool stpropnci_build_set_exit_frame_cmd(uint8_t *buf, uint16_t *buflen,
     }
 
     // if needed to remap the technologies, we could do it here
-    UINT8_TO_STREAM(pp, qual);                    // qualifier
-    UINT8_TO_STREAM(pp, vallen + (crc ? 4 : 0));  // len
-    if (crc == 0) {
+    UINT8_TO_STREAM(pp, qual);                        // qualifier
+    UINT8_TO_STREAM(pp, vallen + (has_crc ? 4 : 0));  // len
+    if (!has_crc) {
+      pVal = pp + 1;
+      pMask = pp + 1 + motiflen;
       // we just copy the power state, data and mask as is.
       ARRAY_TO_STREAM(pp, in, vallen);
       in += vallen;
     } else {
       bool exact = true;
       UINT8_TO_STREAM(pp, *in++);         // power state
+      pVal = pp;
       ARRAY_TO_STREAM(pp, in, motiflen);  // data
       in += motiflen;
       UINT8_TO_STREAM(pp, (uint8_t)(crc & 0xFF));
       UINT8_TO_STREAM(pp, (uint8_t)(crc >> 8));
+      pMask = pp;
       while (motiflen--) {
         if (*in != 0xFF) {
           // At least one byte in the motif has a wildcard, so the CRC will not
@@ -1200,6 +1210,12 @@ static bool stpropnci_build_set_exit_frame_cmd(uint8_t *buf, uint16_t *buflen,
       // exact match
       UINT8_TO_STREAM(pp, exact ? 0xFF : 0x00);
       UINT8_TO_STREAM(pp, exact ? 0xFF : 0x00);
+    }
+    /* Due to FW logic, we need to make sure val bits are 0 if mask bit is 0 */
+    while (pMask < pp) {
+      *pVal &= *pMask;
+      pVal++;
+      pMask++;
     }
 
     remaining_frames--;
@@ -1480,14 +1496,14 @@ uint16_t iso14443_crc(const uint8_t *data, size_t szLen, int type) {
   } else {
     tempCrc = (unsigned short)CRC_PRESET_B;
   }
-  do {
+  while (szLen--) {
     uint8_t bt;
     bt = *data++;
     bt = (bt ^ (uint8_t)(tempCrc & 0x00FF));
     bt = (bt ^ (bt << 4));
     tempCrc = (tempCrc >> 8) ^ ((uint32_t)bt << 8) ^ ((uint32_t)bt << 3) ^
               ((uint32_t)bt >> 4);
-  } while (--szLen);
+  }
 
   return tempCrc;
 }
